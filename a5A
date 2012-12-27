@@ -1,0 +1,67 @@
+Name and section: Peter Collins, section 2
+
+1.)
+Original:
+	sw   $12, counter
+	move $14, $10
+	div  $20, $14, $15
+	putc '\n'
+First Pass:
+	la $1, counter
+	sw $12, 0($1)
+	move $14, $10
+	div $20, $14, $15
+	li $2, 11
+	li $4, 10
+	syscall
+Final Pass:
+	lui $1 0x0040
+	ori $1, $1, 0xfedc
+	sw $12, 0($1)
+	add $14, $10, $0
+	div $14, $15
+	mflo $20
+	addi $2, $0, 11
+	addi $4, $0, 10
+	syscall
+2.)
+Original:
+	bne   $20, $8, print_result
+Calculate Offset:
+	0x0080aa64 - (0x0080aa20 + 0x4)) / 0x4  #Overall it should be this 
+	0x0080aa20 + 0x4 			#Add 4 to the branch address
+	0x0080aa64 - (0x0080aa24)		#Subtract branch address from target address
+	0x00000040 / 0x4			#Remove last two bits from offset
+	0x00000010				#Final calculated offset
+Machine Code Hexadecimal:
+	0x16880010
+Machine Code Binary:
+	0001 0110 1000 1000 0000 0000 0001 0000
+3.)
+	A.)
+Original:
+	bltz   $15, print_err_msg
+Calculate Offset:
+        0x00c0033c - (0x00800044 + 0x4)) / 0x4  #Overall it should be this
+	0x00800044 + 0x4			#Add 4 to the branch address
+	0x00c0033c - 0x00800048			#Subtract branch address from target address
+	0x004002f4 / 0x4                        #Remove last two bits from offset
+	0x001000bd				#Final calculated offset
+The problem the assembler gets into is there are only 16 bits allotted in the
+TAL instruction or 4 hex digits.  The offset we calculated needs 6 hex digits, 
+so it won't fit in the instruction.
+	B.)
+	We want to use a jump instruction so
+Original:
+	bltz   $15, print_err_msg
+First Pass:
+	bgez $15, skip_jump #Translate the instruction to logical opposite
+	j print_err_msg     #Only jump if bltz $15
+skip_jump: some instruction #Else continue to the next instruction
+
+Final Pass:
+	bgez $15, 0x1 #Skip jump by branching if greater or equal to 0
+	j 0xc0033c  #Jump to the print_err_msg address
+	
+
+
